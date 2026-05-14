@@ -1,104 +1,104 @@
 # Local AI Stack
 
-Een volledig self-hosted AI development environment met lokale modellen, cloud inference fallback, vector database voor RAG, en relationele opslag. Alles draait in Docker containers, geconfigureerd via één `docker-compose.yml`.
+A fully self-hosted AI development environment with local models, cloud inference fallback, vector database for RAG, and relational storage. Everything runs in Docker containers, configured via a single `docker-compose.yml`.
 
-## Architectuur
+## Architecture
 
-| Service | Poort | Functie |
+| Service | Port | Function |
 |---|---|---|
-| Open WebUI | 3000 | Chat interface, ondersteunt meerdere modellen tegelijk |
-| LiteLLM | 4000 | Proxy laag voor cloud providers (Groq, OpenAI, Anthropic) |
-| Ollama | 11434 | Lokale modelserver voor open-source LLMs |
-| Qdrant | 6333 | Vector database voor RAG en semantisch zoeken |
-| PostgreSQL | 5432 | Relationele database voor gestructureerde data |
-| pgAdmin | 5050 | Web UI voor PostgreSQL beheer |
+| Open WebUI | 3000 | Chat interface supporting multiple models |
+| LiteLLM | 4000 | Proxy layer for cloud providers (Groq, OpenAI, Anthropic) |
+| Ollama | 11434 | Local model server for open-source LLMs |
+| Qdrant | 6333 | Vector database for RAG and semantic search |
+| PostgreSQL | 5432 | Relational database for structured data |
+| pgAdmin | 5050 | Web UI for PostgreSQL management |
 
-De stack is modelagnostisch — Open WebUI praat met Ollama voor lokale modellen en met LiteLLM voor cloud-modellen, allemaal via dezelfde interface.
+The stack is model-agnostic — Open WebUI talks to Ollama for local models and to LiteLLM for cloud models, all through the same interface.
 
-## Installatie
+## Installation
 
-### Vereisten
+### Requirements
 
-- Docker Desktop of OrbStack
-- Een Groq API key (gratis op groq.com)
+- Docker Desktop or OrbStack
+- A Groq API key (free at groq.com)
 
 ### Setup
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/george-panaite/ai-stack.git
 cd ai-stack
 cp .env.example .env
 ```
 
-Vul `.env` in met je eigen credentials:
+Fill in `.env` with your own credentials:
 
 ```
-GROQ_API_KEY=jouw-groq-key
-POSTGRES_USER=jouw-user
-POSTGRES_PASSWORD=sterk-wachtwoord
+GROQ_API_KEY=your-groq-key
+POSTGRES_USER=your-user
+POSTGRES_PASSWORD=strong-password
 POSTGRES_DB=mydb
-PGADMIN_EMAIL=jouw@email.com
-PGADMIN_PASSWORD=sterk-wachtwoord
+PGADMIN_EMAIL=your@email.com
+PGADMIN_PASSWORD=strong-password
 ```
 
-Start de stack:
+Start the stack:
 
 ```bash
 docker compose up -d
 ```
 
-## Eerste configuratie
+## Initial Configuration
 
 ### Open WebUI
 
-1. Ga naar `http://localhost:3000`
-2. Maak een admin account aan (blijft lokaal)
-3. Instellingen → Verbindingen → voeg LiteLLM toe als OpenAI-compatibele connectie:
+1. Open `http://localhost:3000`
+2. Create an admin account (stays local)
+3. Settings → Connections → add LiteLLM as an OpenAI-compatible connection:
    - URL: `http://litellm:4000`
-   - API key: `sk-1234` (willekeurig)
+   - API key: `sk-1234` (any value works)
    - Tag: `litellm`
 
-### Modellen pullen
+### Pulling models
 
 ```bash
 docker exec -it ollama ollama pull llama3.2
 docker exec -it ollama ollama pull mistral
 ```
 
-## Beheer
+## Management
 
 ```bash
-docker compose up -d           # start alle services
-docker compose down            # stop alle services
-docker compose ps              # status overzicht
-docker compose logs -f <name>  # logs bekijken
-docker compose restart <name>  # één service herstarten
+docker compose up -d           # start all services
+docker compose down            # stop all services
+docker compose ps              # status overview
+docker compose logs -f <name>  # view logs
+docker compose restart <name>  # restart one service
 ```
 
-## Quick links
+## Quick Links
 
 - Open WebUI: http://localhost:3000
 - Qdrant Dashboard: http://localhost:6333/dashboard
 - pgAdmin: http://localhost:5050
 - LiteLLM: http://localhost:4000
 
-## Beveiliging
+## Security
 
-- `.env` staat in `.gitignore` en wordt nooit gecommit
-- API keys en wachtwoorden worden in macOS Keychain bewaard
-- LiteLLM leest de Groq key uit de environment, niet uit `config.yaml`
+- `.env` is in `.gitignore` and never committed
+- API keys and passwords stored in macOS Keychain
+- LiteLLM reads the Groq key from environment, not from `config.yaml`
 
-## Architectuurkeuzes
+## Architecture Decisions
 
-**Waarom Qdrant naast PostgreSQL?** Vector search en relationele opslag zijn verschillende workloads. Qdrant is geoptimaliseerd voor schaalbare vector search met HNSW indexing, PostgreSQL voor gestructureerde data. Scheiden geeft duidelijkere verantwoordelijkheden en betere schaalbaarheid.
+**Why Qdrant alongside PostgreSQL?** Vector search and relational storage are different workloads. Qdrant is optimized for scalable vector search with HNSW indexing, PostgreSQL for structured data. Separation gives clearer responsibilities and better scalability.
 
-**Waarom LiteLLM als proxy?** Modelagnostische architectuur — Open WebUI hoeft niet te weten of het model bij Groq, OpenAI of Anthropic draait. Switchen van provider gaat met één regel in `config.yaml`. Maakt fallback strategieën mogelijk.
+**Why LiteLLM as a proxy?** Model-agnostic architecture — Open WebUI doesn't need to know whether the model runs at Groq, OpenAI or Anthropic. Switching providers is a one-line change in `config.yaml`. Enables fallback strategies.
 
-**Waarom Ollama als container in plaats van native app?** Alle services in hetzelfde Docker netwerk, bereikbaar via service-naam (`http://ollama:11434`). Eén bron van waarheid, geen `host.docker.internal` workarounds.
+**Why Ollama as a container instead of the native app?** All services in the same Docker network, reachable via service name (`http://ollama:11434`). Single source of truth, no `host.docker.internal` workarounds.
 
-## Volgende stappen
+## Roadmap
 
-- [ ] Redis toevoegen voor caching
-- [ ] pgvector extensie installeren in PostgreSQL
-- [ ] Backup strategie voor volumes
-- [ ] Hermes Agent toevoegen voor autonome workflows
+- [ ] Add Redis for caching
+- [ ] Install pgvector extension in PostgreSQL
+- [ ] Backup strategy for volumes
+- [ ] Add Hermes Agent for autonomous workflows
